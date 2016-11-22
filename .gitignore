@@ -17,6 +17,8 @@
 *.sst
 *.cc
 en-in/indian_imagetext_indexdetail_pipeline/bin/*
+en-in/mr_indian_imagetext_initial_pipeline/bin/*
+en-in/indian_imagetext_indexdetail_pipeline/data/*
 
 
 ## Intermediate documents:
