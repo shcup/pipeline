@@ -12,6 +12,10 @@
 *.cb2
 *.txt
 *.crc
+*.jar
+*.data
+*.sst
+*.cc
 
 
 ## Intermediate documents:
