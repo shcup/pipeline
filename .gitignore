@@ -10,6 +10,9 @@
 *.fot
 *.cb
 *.cb2
+*.txt
+*.crc
+
 
 ## Intermediate documents:
 *.dvi
