@@ -67,10 +67,11 @@ cmd="./dump_feature_session_log_join \
      --shuffle_input_buffer_percent=0.5 \
      --dump_feature_input_path=feature_dump \
      --lejian_session_log_input_path=expose_click \
-     --dense_feature_builder=YoutubeDenseFeatureBuilder \
+     --dense_feature_builder=YoutubeNormalizedScoreAndTimestampDenseFeatureBuilder \
      --aggregated_by_user=true \
      --split_minsize=1294967295 \
      "
+#--dense_feature_builder=YoutubeDenseFeatureBuilder \
 echo $cmd
 $cmd
 [ $? -eq 0 ] || { echo "MrDumpFeatureSessionLogJoin Run Failure"; exit 1; }
@@ -101,7 +102,7 @@ key_num=`wc -l model_key | awk '{print $1}'`
 if [ $key_num -lt 10 ]
 then
 	echo 'too few modle key in training data (less than 10)'
-	exit
+	#exit
 fi
 hadoop fs -rm -r -skipTrash $encode_fea_path
 hadoop jar /usr/local/hadoop/share/hadoop/tools/lib/hadoop-streaming-2.6.0.jar -D mapred.output.compress=0  -Dmapreduce.input.fileinputformat.split.minsize=1024 -D mapreduce.tasktracker.map.tasks.maximum=30 -D mapred.reduce.tasks=0 -Dmapreduce.map.memory.mb=3000 -input $output_path/feature_train -output $encode_fea_path -mapper ./mapper_encode_fea.py -file ./mapper_encode_fea.py -file ./model_key -file ./key_id.dict.local 

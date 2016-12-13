@@ -15,7 +15,7 @@ model_key={}
 for line in open('model_key'):
     model_key[line.strip()]=1
 
-p = 0.03
+p = 0.1
 for line in sys.stdin:
     reid,label,features = line.strip().split('\t', 2)
     res_string=label
