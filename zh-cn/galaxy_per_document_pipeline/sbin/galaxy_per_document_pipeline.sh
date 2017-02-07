@@ -517,9 +517,25 @@ function StartStreamingJob()
 
     LoggerInfo $_command
     nohup $_command  1> std_out.txt 2>error.txt &
+
+#$_command  2>&1
     [ $? -eq 0 ] || { LoggerError "Start Spark Streaming Failure"; return 1; }
     LoggerInfo "Spark Streaming Success"
     return 0
+}
+
+function MonitorStreamingJob()
+{
+  cnt=`ps aux | grep SparkSubmit | grep prod.Streaming | grep $GALAXY_PER_DOCUMENT_PIPELINE_HOME | grep -v "grep" | grep -v "\<vi\>" | wc -l`
+  pid=`ps aux | grep SparkSubmit | grep prod.Streaming | grep $GALAXY_PER_DOCUMENT_PIPELINE_HOME | grep -v "grep" | grep -v "\<vi\>" | awk '{print $2}'`
+  if [ $cnt -gt 0 ]; then
+    echo "The streaming instance "$pid" is already running"
+    return
+  fi
+  echo "start the streaming job"
+  COMMAND=streamingstart
+  mainloop
+  return
 }
 
 
@@ -562,6 +578,10 @@ function mainloop() {
             CLEAN_LOGFILE=${GALAXY_PER_DOCUMENT_PIPELINE_LOG_DIR}/$(basename $0)_${COMMAND}_${CURRENT_DATE}.log
             MrImageTextPipelineClean >>${CLEAN_LOGFILE}; return 0
             ;;
+        streamingmonitor)
+            MonitorStreamingJob >> monitor.txt; return 0
+            ;;
+
         *)
             echo "Unknown Command $COMMAND"
 #MrImageTextPipelineUsage; return 1
