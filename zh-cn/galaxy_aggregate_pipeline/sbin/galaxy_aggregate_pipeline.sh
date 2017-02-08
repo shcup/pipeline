@@ -113,7 +113,7 @@ function MrImageTextPipelineInit()
     mkdir -p ${GALAXY_AGGREGATE_PIPELINE_BUILD_DIR}/{input,output,stat}
     mkdir -p ${GALAXY_AGGREGATE_PIPELINE_DATA_DIR}/input/{index_builder,detail_builder}
     mkdir -p ${GALAXY_AGGREGATE_PIPELINE_DATA_DIR}/output/{index_builder,detail_builder}
-    mkdir -p ${GALAXY_AGGREGATE_PIPELINE_REPO_BACKUP_DIR}
+#mkdir -p ${GALAXY_AGGREGATE_PIPELINE_REPO_BACKUP_DIR}
     mkdir -p ${GALAXY_AGGREGATE_PIPELINE_TEST_DIR}/data/{input,output}
 
     HadoopFileSysMakeDir ${HADOOP_BINARY_DIR}
@@ -245,7 +245,7 @@ function RunHBaseExtraction()
     # judge whether to build the index and detail
     FLAG_BUILD_INDEX="FALSE"
     LoggerInfo "Judge whether to build the index and detail"
-    index_data_time=`stat ${GALAXY_AGGREGATE_PIPELINE_DATA_DIR}/input/hdfs_data_input | grep -i Modify | awk -F. '{print $1}' | awk '{print $2" "$3}'`
+    index_data_time=`stat ${GALAXY_AGGREGATE_PIPELINE_DATA_DIR}/output/index_builder/done | grep -i Modify | awk -F. '{print $1}' | awk '{print $2" "$3}'`
     index_data_timestamp=`date -d "$index_data_time" +%s`
     now_timestamp=`date +%s`
     LoggerInfo "index data time:"$index_data_time", index data timestamp:"$index_data_timestamp", now timestamp:"$now_timestamp
@@ -314,7 +314,9 @@ function RunHBaseExtraction()
 function RunHBaseExtractionLatest()
 {
     tomorrow_date=`date -d ' +1 day' +%Y%m%d`
+    end_row=${tomorrow_date:2}
     yesterday_date=`date -d ' -1 day' +%Y%m%d`
+    start_row=${yesterday_date:2}
     _jars=$(echo ${GALAXY_AGGREGATE_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.6.1-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext | sed 's/ /,/g')
 
     echo "hehe" ${HADOOP_GALAXY_ORIGIN_COMPOSITEDOC}
@@ -336,10 +338,11 @@ function RunHBaseExtractionLatest()
               content \
               BUILD_INDEX \
               NOT \
-              /data/overseas_in/recommendation/galaxy/batch/aggregate_result \
-              $yesterday_date \
-              $tomorrow_date \
+              /data/overseas_in/recommendation/galaxy/batch/aggregate_result/ \
+              $start_row \
+              $end_row \
               "
+
     LoggerInfo "_command:" $_command
     $_command
     [ $? -eq 0 ] || { LoggerError "HBase Extraction Latest Run Failure"; return 1; }

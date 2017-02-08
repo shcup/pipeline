@@ -48,6 +48,7 @@ function HadoopJobStart()
 
 function RemoteProcess()
 {
+    rm -f articles.txt
     hadoop fs -cat $_hadoop_articles_output/* | sed 's/[\(\)]//g' | sed 's/,/\t/g' > articles.txt
     unique_tag=`date "+%Y%m%d_%H%M%S_"`$RANDOM
     echo "Unique ID :"$unique_tag
@@ -60,6 +61,7 @@ function RemoteProcess()
     wait
     echo "finish the async!"
 
+    rm -f doc2vec
     scp rec@$remote_ip:$remote_folder/output_doc2vec.txt.$unique_tag doc2vec
     scp rec@$remote_ip:$remote_folder/doc2vec_similarity.txt doc2vec_similarity.txt
     if [ ! -f ./doc2vec ]
@@ -67,6 +69,7 @@ function RemoteProcess()
         echo "get doc2vec failed!"
         return 1
     fi
+    hadoop fs -put -f doc2vec $_hadoop_doc_topic
     ssh rec@$remote_ip "cd $remote_folder; rm -f ./output_doc2vec.txt.$unique_tag;"
 
     # build the related doc
@@ -77,12 +80,9 @@ function RemoteProcess()
         --beishu=1000 \
     "
     echo $cmd
-    $cmd
+#$cmd
 
     
-    rm -f articles.txt
-    hadoop fs -put -f doc2vec $_hadoop_doc_topic
-    rm -f doc2vec
 }
 
 

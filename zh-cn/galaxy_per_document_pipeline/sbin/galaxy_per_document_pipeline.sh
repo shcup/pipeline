@@ -529,10 +529,10 @@ function MonitorStreamingJob()
   cnt=`ps aux | grep SparkSubmit | grep prod.Streaming | grep $GALAXY_PER_DOCUMENT_PIPELINE_HOME | grep -v "grep" | grep -v "\<vi\>" | wc -l`
   pid=`ps aux | grep SparkSubmit | grep prod.Streaming | grep $GALAXY_PER_DOCUMENT_PIPELINE_HOME | grep -v "grep" | grep -v "\<vi\>" | awk '{print $2}'`
   if [ $cnt -gt 0 ]; then
-    echo "The streaming instance "$pid" is already running"
+    echo `date`" The streaming instance "$pid" is already running"
     return
   fi
-  echo "start the streaming job"
+  echo `date`" start the streaming job"
   COMMAND=streamingstart
   mainloop
   return
