@@ -183,10 +183,11 @@ function RunImageTextIndexBuilder()
     --repository_dir=${_output_local_path}  \
     --done_path=${_output_local_path}/done \
     --index_builders=FeatureIndexBuilder \
-    --min_final_doc_count=10 \
-    --feature_rec_min_inverted_list_size=20 \
+    --min_final_doc_count=1 \
+    --feature_rec_min_inverted_list_size=1 \
     --feature_rec_product_indexes=10:invert_feature_rec \
-    --feature_rec_score_computer=INDIndexScoreComputer \
+    --feature_rec_score_computer=FreshnessIndexScoreComputer \
+    --index_fscore_compare=true \
     --feature_rec_index_scoring_conf_path=${GALAXY_AGGREGATE_PIPELINE_CONF_DIR}/index_scoring.conf \
     --feature_rec_indexfile_suffix=galaxy \
     --keep_lower_for_index_key=true \
@@ -338,7 +339,7 @@ function RunHBaseExtractionLatest()
               content \
               BUILD_INDEX \
               NOT \
-              /data/overseas_in/recommendation/galaxy/batch/aggregate_result/ \
+              /data/overseas_in/recommendation/galaxy/batch/aggregate_result \
               $start_row \
               $end_row \
               "
@@ -370,10 +371,11 @@ function RunImageTextIndexBuilderLatest()
     --repository_dir=$_output_local_path   \
     --done_path=${_output_local_path}/done                                             \
     --index_builders=FeatureIndexBuilder                                               \
-    --min_final_doc_count=10 \
-    --feature_rec_min_inverted_list_size=20 \
+    --min_final_doc_count=1 \
+    --feature_rec_min_inverted_list_size=1 \
     --feature_rec_product_indexes=10:invert_feature_rec \
-    --feature_rec_score_computer=INDIndexScoreComputer \
+    --feature_rec_score_computer=FreshnessIndexScoreComputer \
+    --index_fscore_compare=true \
     --feature_rec_index_scoring_conf_path=${GALAXY_AGGREGATE_PIPELINE_CONF_DIR}/index_scoring.conf \
     --feature_rec_indexfile_suffix=galaxy \
     --keep_lower_for_index_key=true \
@@ -508,7 +510,7 @@ function MrImageTextPipelineRoutine()
             ./transfer_data_inc.sh
             ;;
         batch)
-            FreshData
+#FreshData
             RunHBaseExtraction
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; } 
             PullIndexData
@@ -517,7 +519,7 @@ function MrImageTextPipelineRoutine()
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
             RunImageTextDetailBuilder
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
-            ./transfer_data.sh
+            ./transfer_data2.sh
             ;;
     esac
 

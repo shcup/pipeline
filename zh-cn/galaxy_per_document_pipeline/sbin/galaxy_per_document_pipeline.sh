@@ -484,7 +484,7 @@ function StartBatchJob()
               OriginalKey \
               "
     LoggerInfo $_command
-    $_command 
+    $_command 2>&1
     [ $? -eq 0 ] || { LoggerError "Start Spark Batch Failure"; return 1; }
     LoggerInfo "Spark Batch Success"
     return 0

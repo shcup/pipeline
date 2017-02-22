@@ -80,7 +80,7 @@ function RemoteProcess()
         --beishu=1000 \
     "
     echo $cmd
-#$cmd
+    $cmd
 
     
 }
@@ -91,7 +91,7 @@ function RemoteProcess()
 RemoteProcess
 [ $? -eq 0 ] || { echo "Remotejob Run Failure"; rm -rf occupy.lock; exit $?; }
 
-sh $pipeline_dir/sbin/transfer_data_related.sh
+sh ./transfer_data_related.sh
 
 echo "Doc2vec run successed! END"
 rm -rf occupy.lock
