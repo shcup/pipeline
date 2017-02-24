@@ -507,7 +507,7 @@ function MrImageTextPipelineRoutine()
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
             RunImageTextDetailBuilderLatest
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
-            ./transfer_data_inc.sh
+            ./transfer_data_inc2.sh
             ;;
         batch)
 #FreshData
