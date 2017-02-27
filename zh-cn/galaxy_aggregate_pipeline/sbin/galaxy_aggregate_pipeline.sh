@@ -366,7 +366,7 @@ function RunImageTextIndexBuilderLatest()
     _command="                                                                                  \
     ${GALAXY_AGGREGATE_PIPELINE_BIN_DIR}/recommendation_index_builder_main                      \
     --input_full_composite_doc_path=${GALAXY_AGGREGATE_PIPELINE_HOME}/batch/input/hdfs_data_input               \
-    --input_fresh_composite_doc_paths= ${_input_local_path}/hdfs_data_input \
+    --input_fresh_composite_doc_paths=${_input_local_path}/hdfs_data_input \
     --output_composite_doc_path=${_output_local_path}/output_composite_doc            \
     --repository_dir=$_output_local_path   \
     --done_path=${_output_local_path}/done                                             \
