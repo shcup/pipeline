@@ -14,6 +14,7 @@ source /etc/profile
 data_date=
 input_path=
 output_path='pipeline'
+second_param=
 COMMAND=
 
 if [ $# -ge 1 ]
@@ -24,7 +25,7 @@ then
     fi
     if [ $# -ge 2 ]
     then
-        input_path=$2
+        second_param=$2
     fi
     if [ $# -ge 3 ]
     then
@@ -464,6 +465,7 @@ function IdfJob()
 }
 function StartBatchJob()
 {
+    Time_Limit=$second_param
     
     _jars=$(echo ${GALAXY_PER_DOCUMENT_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.6.1-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext | sed 's/ /,/g')
     _command="
@@ -482,6 +484,7 @@ function StartBatchJob()
               GalaxyKeyMapping \
               info \
               OriginalKey \
+              ${Time_Limit} \
               "
     LoggerInfo $_command
     $_command 2>&1

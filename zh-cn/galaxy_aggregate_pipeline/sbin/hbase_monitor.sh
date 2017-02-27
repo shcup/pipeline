@@ -1,5 +1,7 @@
 #!/bin/sh  
+source /etc/profile
 source /home/overseas_in/common/sh_check_util.sh sunhaochuan@letv.com
+cd $(dirname $0)
 MONITOR_FILE=../status/hbase_monitor.log
 
 
