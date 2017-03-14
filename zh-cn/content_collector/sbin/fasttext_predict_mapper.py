@@ -71,7 +71,7 @@ def post_process_category(str):
       res.append(key)
     elif value > 0.1 and value > top_weight/3:
       res.append(key)
-  return ','.join(res)
+  return ';'.join(res)
 
 
 
@@ -93,7 +93,7 @@ def post_process_tag(res_str, title):
     elif title.find(key) != -1:
       res.append(key)
     idx = idx + 1
-  return '.'.join(res)
+  return ';'.join(res)
 
 def mapper():
   for line in sys.stdin:
