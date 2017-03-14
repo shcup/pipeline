@@ -279,7 +279,7 @@ function ScrapyHDFSOneDay()
   _InputParts=
   for x in $_HDFS_FILES 
   do
-    echo x
+    #echo $x
     if [[ -z "$_LastProcessTimestamp" ]] || [[ $x -gt $_LastProcessTimestamp ]]; then
       if [[ -z "$_LastProcessTimestamp" ]] || [[ $x -gt $_CurrentProcessTimestamp ]]; then
         _CurrentProcessTimestamp=$x
@@ -294,10 +294,12 @@ function ScrapyHDFSOneDay()
   done
 
   if [ -n "$_InputParts" ]; then
+    LoggerInfo "Process parts: "$_InputParts
     FastTextLocalProcess "$_InputParts" $_LocalOuputFile
   fi
 
   if [ -n "$_CurrentProcessTimestamp" ]; then
+    LoggerInfo "Overwrite the last process timestamp: "$_CurrentProcessTimestamp
     echo $_CurrentProcessTimestamp > $3
   fi
 
@@ -356,8 +358,8 @@ function mainloop() {
     esac
 
 
-    #ContentCollectorPipelineRoutine >> ${CONTENT_COLLECTOR_PIPELINE_LOGFILE} 2>&1
-    ContentCollectorPipelineRoutine
+    ContentCollectorPipelineRoutine >> ${CONTENT_COLLECTOR_PIPELINE_LOGFILE} 2>&1
+    #ContentCollectorPipelineRoutine
 
     if [ $? -ne 0 ] ; then
         LoggerError "${COMMAND} Run failed";
