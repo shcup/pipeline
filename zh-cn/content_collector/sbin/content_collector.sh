@@ -56,6 +56,7 @@ CONTENT_COLLECTOR_PIPELINE_LOGFILE=
 CONTENT_COLLECTOR_PIPELINE_PIDFILE=
 
 FASTTEXT_MAPPER_FILE=
+MAPREDUCE_INPUT_FORMAT=
 
 CURRENT_DATE=$(date +%Y%m%d)
 CURRENT_HOUR=$(date +%Y%m%d%H)
@@ -135,7 +136,7 @@ function FastTextMapReduce()
         -output $_HadoopOutputPath \
         -mapper ./$FASTTEXT_MAPPER_FILE \
         -file  ./$FASTTEXT_MAPPER_FILE \
-        -inputformat org.apache.hadoop.mapred.SequenceFileAsTextInputFormat 
+        -inputformat $MAPREDUCE_INPUT_FORMAT \
   "
   echo $_cmd
   LoggerInfo $_cmd
@@ -158,14 +159,15 @@ function PushData2Remote()
 {
   _LocalFilePath=$1
   _RemoteHadoopPrefix=$2
-  _Timestamp=`$date +%Y%m%d%H%M%S`
+  _Timestamp=`date +%Y%m%d%H%M%S`
   _FileName=`date "+%Y%m%d_%H%M%S_"`$RANDOM
   scp $_LocalFilePath overseas_in@10.121.145.144:/home/overseas_in/zh-cn/$_FileName
-  ssh overseas_in@10.121.145.144 "cd /home/overseas_in/zh-cn; hadoop fs -put $_FileName /data/overseas_in/recommendation/galaxy/content_tag/$_RemoteHadoopPrefix_$_Timestamp; rm -rf $_FileName"
+  ssh overseas_in@10.121.145.144 "source /etc/profile; cd /home/overseas_in/zh-cn; hadoop fs -put $_FileName /data/overseas_in/recommendation/galaxy/content_tag/${_RemoteHadoopPrefix}_${_FileName}; rm -rf $_FileName"
 }
 
 function CrawleerDataBatchUpdate()
 {
+  MAPREDUCE_INPUT_FORMAT=org.apache.hadoop.mapred.SequenceFileAsTextInputFormat
   FASTTEXT_MAPPER_FILE=fasttext_predict_mapper.py
   _HadoopInputBase=/data/search/short_video/imagetextdoc/output/inc/galaxy
   _HadoopOutput=/data/search/short_video/imagetextdoc/parser/galaxy/cr_batch
@@ -180,8 +182,11 @@ function CrawleerDataBatchUpdate()
   FastTextMapReduce $_HadoopInputPath $_HadoopOutput
   [ $? -eq 0 ] || { LoggerError "CrawleerDataBatchUpdate Failure"; return 1; }
 
+  rm -f $_LocalPath
   hadoop fs -getmerge $_HadoopOutput $_LocalPath
-  PushData2Remote $_LocalPath crba_
+  if [ -f "$_LocalPath" ]; then
+    PushData2Remote $_LocalPath crba_
+  fi
 
   LoggerInfo "CrawleerDataBatchUpdate Success"
   return 0
@@ -190,6 +195,7 @@ function CrawleerDataBatchUpdate()
 
 function ThirdPartyDataBatchUpdate()
 {
+  MAPREDUCE_INPUT_FORMAT=org.apache.hadoop.mapred.TextInputFormat
   FASTTEXT_MAPPER_FILE=fasttext_rawdata_predict_mapper.py
   _HadoopInputBase=/data/rec/galaxy/content/
   _HadoopOutput=/data/search/short_video/imagetextdoc/parser/galaxy/th_batch
@@ -204,8 +210,11 @@ function ThirdPartyDataBatchUpdate()
   FastTextMapReduce $_HadoopInputPath $_HadoopOutput
   [ $? -eq 0 ] || { LoggerError "ThirdPartyDataBatchUpdate Failure"; return 1; }
 
+  rm -f $_LocalPath
   hadoop fs -getmerge $_HadoopOutput $_LocalPath
-  PushData2Remote $_LocalPath thba_
+  if [ -f "$_LocalPath" ]; then
+    PushData2Remote $_LocalPath thba_
+  fi
 
   LoggerInfo "ThirdPartyDataBatchUpdate Success"
   return 0
@@ -217,34 +226,43 @@ function CrawlerDataIncrementalUpdate()
   _HadoopInputBase=/data/search/short_video/imagetextdoc/output/inc/galaxy
   _TodayDate=`date +%Y%m%d`
   _TodayDataPrefix=${_HadoopInputBase}/${_TodayDate}*
-  _YesterdayDate=`date +%Y%m%d -d ‘1 day ago’`
+  _YesterdayDate=`date +%Y%m%d -d "1 day ago"`
   _YesterdayDataPrefix=${_HadoopInputBase}/${_YesterdayDate}*
   _LocalFilePath=$CONTENT_COLLECTOR_PIPELINE_DATA_DIR/output/incremental/crawler_inc_fasttext
   _LastProcessStampFile=$CONTENT_COLLECTOR_PIPELINE_STATUS_DIR/crawler_last_process
 
-  ScrapyHDFSOneDay $_HadoopInputBase $_TodayDataPrefix $_LastProcessStampFile $_LocalFilePath
-  [ $? -eq 0 ] || { LoggerError "CrawlerDataIncrementalUpdate Failure"; return 1; }
+
+  rm -f $_LocalFilePath 
   ScrapyHDFSOneDay $_HadoopInputBase $_YesterdayDataPrefix $_LastProcessStampFile $_LocalFilePath
   [ $? -eq 0 ] || { LoggerError "CrawlerDataIncrementalUpdate Failure"; return 1; }
-  PushData2Remote $_LocalPath crinc_
+  ScrapyHDFSOneDay $_HadoopInputBase $_TodayDataPrefix $_LastProcessStampFile $_LocalFilePath
+  [ $? -eq 0 ] || { LoggerError "CrawlerDataIncrementalUpdate Failure"; return 1; }
+ 
+  if [ -f "$_LocalFilePath" ]; then
+    PushData2Remote $_LocalFilePath crinc_
+  fi
 
 }
 function ThirdPartyDataIncrementalUpdate()
 {
   FASTTEXT_MAPPER_FILE=fasttext_rawdata_predict_mapper.py
-  _HadoopInputBase=/data/rec/galaxy/content/
+  _HadoopInputBase=/data/rec/galaxy/content
   _TodayDate=`date +%Y%m%d`
   _TodayDataPrefix=${_HadoopInputBase}/${_TodayDate}*
-  _YesterdayDate=`date +%Y%m%d -d ‘1 day ago’`
+  _YesterdayDate=`date +%Y%m%d -d "1 day ago"`
   _YesterdayDataPrefix=${_HadoopInputBase}/${_YesterdayDate}*
   _LocalFilePath=$CONTENT_COLLECTOR_PIPELINE_DATA_DIR/output/incremental/thirdparty_inc_fasttext
   _LastProcessStampFile=$CONTENT_COLLECTOR_PIPELINE_STATUS_DIR/thirdparty_last_process
 
-  ScrapyHDFSOneDay $_HadoopInputBase $_TodayDataPrefix $_LastProcessStampFile $_LocalFilePath
-  [ $? -eq 0 ] || { LoggerError "CrawlerDataIncrementalUpdate Failure"; return 1; }
+  rm -f $_LocalFilePath
   ScrapyHDFSOneDay $_HadoopInputBase $_YesterdayDataPrefix $_LastProcessStampFile $_LocalFilePath
   [ $? -eq 0 ] || { LoggerError "CrawlerDataIncrementalUpdate Failure"; return 1; }
-  PushData2Remote $_LocalPath thinc_
+  ScrapyHDFSOneDay $_HadoopInputBase $_TodayDataPrefix $_LastProcessStampFile $_LocalFilePath
+  [ $? -eq 0 ] || { LoggerError "CrawlerDataIncrementalUpdate Failure"; return 1; }
+ 
+  if [ -f "$_LocalFilePath" ]; then
+    PushData2Remote $_LocalFilePath thinc_
+  fi
 
 }
 function ScrapyHDFSOneDay()
