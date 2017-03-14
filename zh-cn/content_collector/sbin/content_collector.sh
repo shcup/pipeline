@@ -181,7 +181,7 @@ function CrawleerDataBatchUpdate()
   [ $? -eq 0 ] || { LoggerError "CrawleerDataBatchUpdate Failure"; return 1; }
 
   hadoop fs -getmerge $_HadoopOutput $_LocalPath
-  PushData2Remote $_LocalPath _thba
+  PushData2Remote $_LocalPath crba_
 
   LoggerInfo "CrawleerDataBatchUpdate Success"
   return 0
@@ -279,7 +279,7 @@ function ScrapyHDFSOneDay()
     FastTextLocalProcess "$_InputParts" $_LocalOuputFile
   fi
 
-  if [ -z "$_CurrentProcessTimestamp" ]; then
+  if [ -n "$_CurrentProcessTimestamp" ]; then
     echo $_CurrentProcessTimestamp > $3
   fi
 
@@ -336,23 +336,6 @@ function mainloop() {
             echo "Unknown Command $COMMAND"
             ;;
     esac
-
-    while getopts f:v:h opt
-    do
-        case $opt in
-            f)
-                TEST_INPUT_COMPOSITE_DOC_PATH=$OPTARG
-                ;;
-            v)
-                FLAG_VLOG_SERVERITY=$OPTARG
-                ;;
-            h|*)
-                return 1
-                ;;
-        esac
-    done
-
-    shift $[$OPTIND-1]
 
 
     #ContentCollectorPipelineRoutine >> ${CONTENT_COLLECTOR_PIPELINE_LOGFILE} 2>&1
