@@ -88,7 +88,7 @@ def post_process_tag(res_str, title):
     if top_weight < 0 and value > 0.001:
       top_weight = value
       res.append(key)
-    elif idx < 5 and value > 0.001 and value > top_weight/10:
+    elif idx < 5 and value > 0.01 and value > top_weight/10:
       res.append(key)
     elif title.find(key) != -1:
       res.append(key)
@@ -116,7 +116,7 @@ def mapper():
        text_input = text_input + "\t" + " ".join(doc.main_text_list) 
     else:
        sys.stderr.write('reporter:counter:map_error,empyt_input,1\n')
-       sys.stderr.write('bad id:' + id)
+       sys.stderr.write('bad id:' + url)
        continue
     category_output = predict_function(text_input, 5 ,0)
     tag_output = predict_function(text_input, 200, 1)
@@ -125,6 +125,46 @@ def mapper():
     #print id + "\t" + text_input
     #print url + "\t" + doc.global_id + "\t"  + post_process_category(category_output) + "\t" + post_process_tag(tag_output, doc.title)
 
+def dump():
+  for line in sys.stdin:
+    if not line:
+       break
+    sp = line.strip().split('\t')
+    url = sp[0]
+    data_base64 = sp[-1]
+    try:
+      data_str = base64.b64decode(data_base64)
+    except:
+      sys.stderr.write('reporter:counter:map_error,map_decode_failed,1\n');
+      continue
+
+    doc = ImageTextDoc()
+    str_to_thrift(data_str, doc)
+    
+    text_input = doc.title 
+    if doc and doc.main_text_list and text_input:
+       text_input = text_input + "\t" + " ".join(doc.main_text_list) 
+    else:
+       sys.stderr.write('reporter:counter:map_error,empyt_input,1\n')
+       sys.stderr.write('bad id:' + url+"\n")
+       sys.stderr.write(str(doc.main_text_list) + '\n')
+       continue
+    category_output = predict_function(text_input, 5 ,0)
+    tag_output = predict_function(text_input, 200, 1)
+    
+    #print doc.global_id + "\t" + post_process_category(category_output) + "\t" + post_process_tag(tag_output, doc.title)
+    print text_input
+    #print url + "\t" + doc.global_id + "\t"  + post_process_category(category_output) + "\t" + post_process_tag(tag_output, doc.title)
+
+
+
 if __name__ == '__main__':
-  mapper()
+  if len(sys.argv) == 1:
+    mapper()
+    exit(0)
+  else:
+    cmd=sys.argv[1]
+    if (cmd == 'dump'):
+     dump()
+
 

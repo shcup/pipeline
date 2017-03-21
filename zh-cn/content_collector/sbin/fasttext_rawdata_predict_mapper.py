@@ -53,7 +53,7 @@ def post_process_tag(res_str, title):
     if top_weight < 0 and value > 0.001:
       top_weight = value
       res.append(key)
-    elif idx < 5 and value > 0.001 and value > top_weight/10:
+    elif idx < 5 and value > 0.01 and value > top_weight/10:
       res.append(key)
     elif title.find(key) != -1:
       res.append(key)
@@ -86,7 +86,35 @@ def mapper():
     print id + "\t" + post_process_category(category_output) + "\t" + post_process_tag(tag_output, title)
     #print url + "\t" + doc.global_id + "\t"  + post_process_category(category_output) + "\t" + post_process_tag(tag_output, doc.title)
 
+def dump():
+  for line in sys.stdin:
+    if not line:
+       break
+    sp = line.strip().split('\t')
+    if len(sp) < 3:
+      continue
+    id = sp[0]
+    title = sp[1]
+    body = sp[2]
+
+    text_input=title + " " + RemoveHtmlTag(body)
+    
+    category_output = predict_function(text_input, 5 ,0)
+    tag_output = predict_function(text_input, 200, 1)
+    
+    #print id + "\t" + post_process_category(category_output) + "\t" + post_process_tag(tag_output, title)
+    print id + "\t" + RemoveHtmlTag(body)
+    print id + "\t" + body
+
+
+
 
 if __name__ == '__main__':
-  mapper()
+  if len(sys.argv) == 1:
+    mapper()
+    exit(0)
+  else:
+    cmd=sys.argv[1]
+    if (cmd == 'dump'):
+     dump()
 
