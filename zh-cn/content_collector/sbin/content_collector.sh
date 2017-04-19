@@ -1,6 +1,8 @@
 #!/bin/sh
-cd `dirname $0`
+#!/bin/sh  
 source /etc/profile
+cd `dirname $0`
+source ../lib/common/sh_check_util.sh sunhaochuan@letv.com
 #===============================================================================
 #
 # Copyright (c) 2015 Letv.com, Inc. All Rights Reserved
@@ -161,8 +163,9 @@ function PushData2Remote()
   _RemoteHadoopPrefix=$2
   _Timestamp=`date +%Y%m%d%H%M%S`
   _FileName=`date "+%Y%m%d_%H%M%S_"`$RANDOM
-  scp $_LocalFilePath overseas_in@10.121.145.144:/home/overseas_in/zh-cn/$_FileName
-  ssh overseas_in@10.121.145.144 "source /etc/profile; cd /home/overseas_in/zh-cn; hadoop fs -put $_FileName /data/overseas_in/recommendation/galaxy/content_tag/${_RemoteHadoopPrefix}_${_FileName}; rm -rf $_FileName"
+  #scp $_LocalFilePath overseas_in@10.121.145.144:/home/overseas_in/zh-cn/$_FileName
+  #ssh overseas_in@10.121.145.144 "source /etc/profile; cd /home/overseas_in/zh-cn; hadoop fs -put $_FileName /data/overseas_in/recommendation/galaxy/content_tag/${_RemoteHadoopPrefix}_${_FileName}; rm -rf $_FileName"
+  hadoop fs -put $_LocalFilePath /data/search/short_video/imagetextdoc/parser/galaxy/content_tag/
 }
 
 function CrawleerDataBatchUpdate()
@@ -306,6 +309,27 @@ function ScrapyHDFSOneDay()
 
 }
 
+function CrawlerStatusReport()
+{
+  _date=`date +%Y%m%d -d "1 day ago"`
+  _CMD1=`hadoop fs -cat /data/rec/galaxy/crawler_upload/${_date}* | awk -F'/' '{print $3}' | sort | uniq -c` 
+  _CMD2=`hadoop fs -text /data/search/short_video/imagetextdoc/output/inc/galaxy/${_date}* | awk -F'\t' '{print $1}' | awk -F'/' '{print $3}' | sort | uniq -c`
+  mail_subject="crawler data report for "$_date
+  mail_to_list="sunhaochuan@le.com,yulei5@le.com,houchenglong@le.com,wanghongqing@le.com"
+  mail_content=`echo -e "Input:\n"$_CMD1"\nOutput:\n"$_CMD2`
+
+  send_mail "$mail_subject" "$mail_content" "$mail_to_list"
+}
+
+function CrawlerStatusCheck()
+{
+  _date=`date +%Y%m%d%H -d "$second_param hour ago"`
+  _CMD1=`hadoop fs -cat /data/rec/galaxy/crawler_upload/${_date}* | awk -F'/' '{print $3}' | sort | uniq -c` 
+  echo -e $_CMD1
+  _CMD2=`hadoop fs -text /data/search/short_video/imagetextdoc/output/inc/galaxy/${_date}* | awk -F'\t' '{print $1}' | awk -F'/' '{print $3}' | sort | uniq -c`
+  echo -e $_CMD2
+    
+}
 
 function ContentCollectorPipelineRoutine()
 {
@@ -332,7 +356,10 @@ function ContentCollectorPipelineRoutine()
            CrawleerDataBatchUpdate
            [ $? -eq 0 ] || { ContentCollectorPipelineClean; return 1; }
            ;;
-
+        cr_report)
+          CrawlerStatusReport
+          [ $? -eq 0 ] || { ContentCollectorPipelineClean; return 1; }
+          ;;
     esac
 
     ContentCollectorPipelineClean
@@ -343,7 +370,7 @@ function ContentCollectorPipelineRoutine()
 function mainloop() {
 
     case $COMMAND in
-        th_inc|th_batch|cr_inc|cr_batch|batch|streamingstop)
+        th_inc|th_batch|cr_inc|cr_batch|batch|streamingstop|cr_report)
             CONTENT_COLLECTOR_PIPELINE_LOGFILE=${CONTENT_COLLECTOR_PIPELINE_LOG_DIR}/$(basename $0)_${COMMAND}_${LOGFILE_SUFFIX}.log
             mkdir -p ${CONTENT_COLLECTOR_PIPELINE_LOG_DIR}
             ;;
@@ -351,7 +378,10 @@ function mainloop() {
             ContentCollectorPipelineClean=${CONTENT_COLLECTOR_PIPELINE_LOG_DIR}/$(basename $0)_${COMMAND}_${CURRENT_DATE}.log
             MrImageTextPipelineClean >>${CLEAN_LOGFILE}; return 0
             ;;
-
+        cr_check)
+          CrawlerStatusCheck
+          exit
+          ;;
         *)
             echo "Unknown Command $COMMAND"
             ;;
