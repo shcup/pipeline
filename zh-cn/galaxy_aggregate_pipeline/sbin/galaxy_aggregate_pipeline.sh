@@ -73,8 +73,8 @@ MAPRED_NUM_MAPPER=
 MAPRED_NUM_REDUCER=
 
 #pipeline specific configurationj
-HADOOP_BASE_DIR=/data/overseas_in/recommendation/galaxy/$COMMAND
-HADOOP_HOT_DATA=/data/overseas_in/recommendation/galaxy/hot/
+HADOOP_BASE_DIR=/data/rec/recommendation/galaxy/doc_process/aggregate/$COMMAND
+HADOOP_HOT_DATA=/data/rec/recommendation/galaxy/doc_process/hot/
 HADOOP_BINARY_DIR=${HADOOP_BASE_DIR}/bin
 HADOOP_GALAXY_ORIGIN_COMPOSITEDOC=${HADOOP_BASE_DIR}/aggregate_output
 
@@ -352,6 +352,75 @@ function RunHBaseExtractionLatest()
 
 }
 
+function RunHDFSExtractionLatest()
+{
+    _jars=$(echo ${GALAXY_AGGREGATE_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.5.2-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext/*.jar | sed 's/ /,/g')
+
+    echo "hehe" ${HADOOP_GALAXY_ORIGIN_COMPOSITEDOC}
+    HadoopFileSysRemoveDir ${HADOOP_GALAXY_ORIGIN_COMPOSITEDOC}
+    hadoop fs -rm -r -skipTrash /user/rec/.Trash/Current/user/hive/warehouse
+    _command="
+              spark-submit \
+              --class prod.HDFSExtration \
+              --master yarn-client \
+              --executor-memory 2g \
+              --num-executors 100 \
+              --driver-memory 2g \
+              --jars $_jars \
+              ${GALAXY_AGGREGATE_PIPELINE_JAR_DIR}/SparkScalsJar.jar \
+              yarn-client \
+              ${HADOOP_BASE_DIR}
+              86400 \
+              GalaxyContent \
+              info \
+              content \
+              BUILD_INDEX \
+              NOT \
+              /data/overseas_in/recommendation/galaxy/batch/aggregate_result \
+              $start_row \
+              $end_row \
+              "
+
+    LoggerInfo "_command:" $_command
+    $_command
+    [ $? -eq 0 ] || { LoggerError "HBase Extraction Latest Run Failure"; return 1; }
+    LoggerInfo "RunHBaseExtractionLatest Success"
+    return 0
+}
+
+function RunHDFSExtractionBatch()
+{
+    _jars=$(echo ${GALAXY_AGGREGATE_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.5.2-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext/*.jar | sed 's/ /,/g')
+
+    echo "hehe" ${HADOOP_GALAXY_ORIGIN_COMPOSITEDOC}
+    hadoop fs -rm -r -skipTrash /user/rec/.Trash/Current/user/hive/warehouse
+    HadoopFileSysRemoveDir ${HADOOP_GALAXY_ORIGIN_COMPOSITEDOC}
+    _command="
+              spark-submit \
+              --class prod.HDFSExtration \
+              --master yarn-client \
+              --executor-memory 2g \
+              --num-executors 100 \
+              --driver-memory 2g \
+              --jars $_jars \
+              ${GALAXY_AGGREGATE_PIPELINE_JAR_DIR}/SparkScalsJar.jar \
+              yarn-client \
+              ${HADOOP_BASE_DIR}
+              0 \
+              Batch \
+              info \
+              content \
+              BUILD_INDEX \
+              NOT \
+              /data/overseas_in/recommendation/galaxy/batch/aggregate_result \
+              "
+
+    LoggerInfo "_command:" $_command
+    $_command
+    [ $? -eq 0 ] || { LoggerError "HBase Extraction Latest Run Failure"; return 1; }
+    LoggerInfo "RunHBaseExtractionLatest Success"
+    return 0
+}
 function RunImageTextIndexBuilderLatest()
 {
     _output_local_path=${GALAXY_AGGREGATE_PIPELINE_DATA_DIR}/output/index_builder
@@ -430,61 +499,65 @@ function RunImageTextDetailBuilderLatest()
 function FreshData()
 {
     echo "put the hot data to "$HADOOP_HOT_DATA
+    mkdir ../data/hot_temp
     rm -f hot_people
-    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/out/hot_people
-    hadoop fs -put -f hot_people $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/out/hot_people -O ../data/hot_temp/hot_people
+#hadoop fs -put -f hot_people $HADOOP_HOT_DATA
     rm -f movie_all
-    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/movie_all
-    hadoop fs -put -f movie_all $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/movie_all -O ../data/hot_temp/movie_all
+#    hadoop fs -put -f movie_all $HADOOP_HOT_DATA
     rm -f TVplay_all
-    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/TVplay_all
-    hadoop fs -put -f TVplay_all $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/TVplay_all -O ../data/hot_temp/TVplay_all
+#   hadoop fs -put -f TVplay_all $HADOOP_HOT_DATA
     rm -f variety_all
-    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/variety_all
-    hadoop fs -put -f variety_all $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/variety_all -O ../data/hot_temp/variety_all
+#   hadoop fs -put -f variety_all $HADOOP_HOT_DATA
     rm -f cartoon_all
-    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/cartoon_all
-    hadoop fs -put -f cartoon_all $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/chenglinpeng/leview_movie/data/cartoon_all -O ../data/hot_temp/cartoon_all
+#   hadoop fs -put -f cartoon_all $HADOOP_HOT_DATA
 
     rm -f baidu_today_hotsearch.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/baidu_today_hotsearch.txt
-    hadoop fs -put -f baidu_today_hotsearch.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/baidu_today_hotsearch.txt -O ../data/hot_temp/baidu_today_hotsearch.txt
+#   hadoop fs -put -f baidu_today_hotsearch.txt $HADOOP_HOT_DATA
     rm -f baidu_realtime_hot_search.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/baidu_realtime_hot_search.txt
-    hadoop fs -put -f baidu_realtime_hot_search.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/baidu_realtime_hot_search.txt -O ../data/hot_temp/baidu_realtime_hot_search.txt
+#   hadoop fs -put -f baidu_realtime_hot_search.txt $HADOOP_HOT_DATA
     rm -f qq_headline.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/qq_headline.txt
-    hadoop fs -put -f qq_headline.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/qq_headline.txt -O ../data/hot_temp/qq_headline.txt
+#   hadoop fs -put -f qq_headline.txt $HADOOP_HOT_DATA
     rm -f ifeng_headline.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/ifeng_headline.txt
-    hadoop fs -put -f ifeng_headline.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/ifeng_headline.txt -O ../data/hot_temp/ifeng_headline.txt
+#   hadoop fs -put -f ifeng_headline.txt $HADOOP_HOT_DATA
     rm -f sina_headline.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_headline.txt
-    hadoop fs -put -f sina_headline.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_headline.txt -O ../data/hot_temp/sina_headline.txt
+#   hadoop fs -put -f sina_headline.txt $HADOOP_HOT_DATA
     rm -f sina_finance.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_finance.txt
-    hadoop fs -put -f sina_finance.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_finance.txt -O ../data/hot_temp/sina_finance.txt
+#   hadoop fs -put -f sina_finance.txt $HADOOP_HOT_DATA
     rm -f ifeng_finance.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/ifeng_finance.txt
-    hadoop fs -put -f ifeng_finance.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/ifeng_finance.txt -O ../data/hot_temp/ifeng_finance.txt
+#   hadoop fs -put -f ifeng_finance.txt $HADOOP_HOT_DATA
     rm -f hupu_sport.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/hupu_sport.txt
-    hadoop fs -put -f hupu_sport.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/hupu_sport.txt -O ../data/hot_temp/hupu_sport.txt
+#   hadoop fs -put -f hupu_sport.txt $HADOOP_HOT_DATA
     rm -f sina_sport.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_sport.txt
-    hadoop fs -put -f sina_sport.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_sport.txt -O ../data/hot_temp/sina_sport.txt
+#   hadoop fs -put -f sina_sport.txt $HADOOP_HOT_DATA
     rm -f qq_sport.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/qq_sport.txt
-    hadoop fs -put -f qq_sport.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/qq_sport.txt -O ../data/hot_temp/qq_sport.txt
+#   hadoop fs -put -f qq_sport.txt $HADOOP_HOT_DATA
     rm -f ifeng_ent.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/ifeng_ent.txt
-    hadoop fs -put -f ifeng_ent.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/ifeng_ent.txt -O ../data/hot_temp/ifeng_ent.txt
+#   hadoop fs -put -f ifeng_ent.txt $HADOOP_HOT_DATA
     rm -f qq_ent.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/qq_ent.txt
-    hadoop fs -put -f qq_ent.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/qq_ent.txt -O ../data/hot_temp/qq_ent.txt
+#   hadoop fs -put -f qq_ent.txt $HADOOP_HOT_DATA
     rm -f sina_ent.txt
-    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_ent.txt
-    hadoop fs -put -f sina_ent.txt $HADOOP_HOT_DATA
+    wget http://10.148.12.101:8000/wanghongqing/leview_news/data/sina_ent.txt -O ../data/hot_temp/sina_ent.txt
+#   hadoop fs -put -f sina_ent.txt $HADOOP_HOT_DATA
+
+    rm -rf ../data/hot
+    mv  ../data/hot_temp ../data/hot
 
 }
 
@@ -499,7 +572,8 @@ function MrImageTextPipelineRoutine()
     case $COMMAND in
         latest)
             FreshData
-            RunHBaseExtractionLatest
+#RunHBaseExtractionLatest
+            RunHDFSExtractionLatest
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; } 
             PullIndexData
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; } 
@@ -507,11 +581,12 @@ function MrImageTextPipelineRoutine()
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
             RunImageTextDetailBuilderLatest
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
-            ./transfer_data_inc2.sh
+            ./transfer_data_inc.sh
             ;;
         batch)
 #FreshData
-            RunHBaseExtraction
+#RunHBaseExtraction
+            RunHDFSExtractionBatch
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; } 
             PullIndexData
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; } 
@@ -519,7 +594,7 @@ function MrImageTextPipelineRoutine()
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
             RunImageTextDetailBuilder
             [ $? -eq 0 ] || { MrImageTextPipelineClean; return 1; }
-            ./transfer_data2.sh
+            ./transfer_data.sh
             ;;
     esac
 

@@ -466,11 +466,13 @@ function IdfJob()
 function StartBatchJob()
 {
     Time_Limit=$second_param
-    
-    _jars=$(echo ${GALAXY_PER_DOCUMENT_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.6.1-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext | sed 's/ /,/g')
+   
+    hadoop fs -rm -r -skipTrash /data/rec/recommendation/galaxy/doc_process/batch/data
+    _jars=$(echo ${GALAXY_PER_DOCUMENT_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.5.2-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext/*.jar | sed 's/ /,/g')
     _command="
               spark-submit \
               --class prod.Batch \
+              --files /usr/local/hive/conf/hive-site.xml \
               --master yarn-client \
               --executor-memory 2g \
               --num-executors 10 \
@@ -496,7 +498,7 @@ function StartBatchJob()
 
 function StartStreamingJob()
 {
-    _jars=$(echo ${GALAXY_PER_DOCUMENT_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.6.1-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext | sed 's/ /,/g')
+    _jars=$(echo ${GALAXY_PER_DOCUMENT_PIPELINE_JAR_DIR}/*.jar /usr/local/spark/lib/*.jar /letv/usr/local/spark-1.5.2-bin-hadoop2.6/libext/*.jar /usr/local/spark/libext | sed 's/ /,/g')
     _command="
               spark-submit \
               --class prod.Streaming \
@@ -508,8 +510,8 @@ function StartStreamingJob()
               ${GALAXY_PER_DOCUMENT_PIPELINE_JAR_DIR}/SparkScalsJar.jar \
               yarn-client \
               prod_content \
-              10.121.145.144:9092 \
-              10.121.145.27:2181,10.121.145.26:2181,10.121.145.25:2181 \
+              10.130.212.117:9092 \
+              202.47.193.118:2181,202.47.193.117:2181,202.47.193.116:2181 \
               GalaxyContent \
               info \
               content \
