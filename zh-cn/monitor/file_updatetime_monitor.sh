@@ -2,6 +2,7 @@
 #!Author:jiaokeke1@letv.com
 
 source /letv/home/rec/common/sh_check_util.sh sunhaochuan@letv.com
+source /etc/profile
 cd $(dirname $0)
 
 function CheckFileMinuteUpdatetime()
@@ -71,10 +72,11 @@ if [ $? -ne 0 ]; then
     send_mail "$mail_subject" "$mail_content" "$mail_to_list" "$phone_list"
 fi
 
-crawler_hdfs_path=/data/search/short_video/imagetextdoc/output/inc/galaxy/
+crawler_hdfs_path=/data/search/platform/d3c14f0a147644331486716941108/out/imagetext/
 hadoop_file_updatetime=`hadoop fs -ls $crawler_hdfs_path | tail -1 |  awk -F "/" '{print $NF}' | awk -F "_" '{print $NF}'`
 echo "hadoop_file_updatetime" $hadoop_file_updatetime
-CheckMinuteTimeDiff $hadoop_file_updatetime 30
+file_updatetime_HMS=`echo ${hadoop_file_updatetime:8:6}`
+CheckMinuteTimeDiff $file_updatetime_HMS 30
 if [ $? -ne 0 ]; then
     mail_content="file: $crawler_hdfs_path not update in 30 Minute"
     send_mail "$mail_subject" "$mail_content" "sunhaochuan@le.com,houchenglong@le.com" "$phone_list"
